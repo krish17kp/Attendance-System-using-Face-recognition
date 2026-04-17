@@ -1,7 +1,7 @@
 """
-app.py — Home page and app entry point.
+Home page and app entry point.
 
-Run with:  streamlit run app.py
+Run with: streamlit run app.py
 """
 
 import streamlit as st
@@ -11,97 +11,106 @@ from src.attendance_manager import AttendanceManager
 from src.database import create_tables, get_all_students
 from src.recognizer import FaceRecognizer
 
-st.set_page_config(page_title=config.APP_TITLE, page_icon="📸",
-                   layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title=config.APP_TITLE,
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 create_tables()
 
 
-# ── Session state ─────────────────────────────────────────────────────────────
 if "att_manager" not in st.session_state:
     st.session_state.att_manager = AttendanceManager()
 
 if "recognizer" not in st.session_state:
-    r = FaceRecognizer()
-    r.load_known_encodings()
-    st.session_state.recognizer = r
+    recognizer = FaceRecognizer()
+    recognizer.load_known_encodings()
+    st.session_state.recognizer = recognizer
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.title("🎓 Face Attendance")
+    st.title("Face Attendance")
+    st.caption("Local attendance tracker")
     st.markdown("---")
 
-    mgr    = st.session_state.att_manager
-    stats  = mgr.get_today_stats()
-    enc    = st.session_state.recognizer.get_encoding_count()
-    stds   = get_all_students()
+    manager = st.session_state.att_manager
+    stats = manager.get_today_stats()
+    encoding_count = st.session_state.recognizer.get_encoding_count()
+    students = get_all_students()
 
-    st.metric("Registered students", len(stds))
-    st.metric("Marked today",        stats["total_marked"])
+    st.metric("Registered students", len(students))
+    st.metric("Marked today", stats["total_marked"])
     if stats["session_active"]:
-        st.info(f"Active: {stats['current_subject']}")
+        st.info(f"Session active: {stats['current_subject']}")
 
     st.markdown("---")
-    threshold = st.slider("Recognition threshold", 0.35, 0.65,
-                           config.RECOGNITION_THRESHOLD, 0.01,
-                           help="Lower = stricter, Higher = more lenient")
+    threshold = st.slider(
+        "Recognition threshold",
+        0.35,
+        0.65,
+        config.RECOGNITION_THRESHOLD,
+        0.01,
+        help="Lower values are stricter.",
+    )
     if threshold != config.RECOGNITION_THRESHOLD:
         config.RECOGNITION_THRESHOLD = threshold
         st.session_state.recognizer.threshold = threshold
 
-    st.caption(f"Encodings loaded: {enc}")
+    st.caption(f"Face encodings loaded: {encoding_count}")
 
 
-# ── Home page ─────────────────────────────────────────────────────────────────
-st.title("📸 Face Attendance System")
+st.title("Face Attendance System")
 st.markdown("---")
 
-col1, col2 = st.columns([2, 1])
+col_left, col_right = st.columns([2, 1])
 
-with col1:
-    st.markdown("""
-    ## Welcome
+with col_left:
+    st.markdown(
+        """
+        ## Overview
 
-    This system uses **facial recognition** to automate classroom attendance.
+        This system records student attendance with face recognition.
 
-    ### Features
-    - **Register** students with their face (15 photos captured via browser camera)
-    - **Duplicate face detection** – blocks re-registration under a different name
-    - **Mark attendance** in real time via webcam + face recognition
-    - **Liveness detection** (MediaPipe) to prevent photo spoofing
-    - **Reports** – filter by date, subject, section, student; export CSV / Excel
-    - **Analytics** – trends, department breakdowns, top performers
-    """)
+        ### Core functions
+        - Register students with multiple face photos
+        - Detect duplicate face records during registration
+        - Mark attendance in real time from the camera feed
+        - Use liveness checks to reduce photo spoofing
+        - Review reports and attendance trends
+        """
+    )
 
-with col2:
-    st.markdown("### System Status")
-    db_ok = config.DATABASE_PATH.exists()
-    st.success("✅ Database ready") if db_ok else st.warning("Database will be created on first run")
-    enc = st.session_state.recognizer.get_encoding_count()
-    if enc:
-        st.success(f"✅ {enc} face encodings loaded")
+with col_right:
+    st.subheader("System Status")
+    if config.DATABASE_PATH.exists():
+        st.success("Database ready")
     else:
-        st.info("No face encodings – register students first")
+        st.warning("Database will be created on first run")
+
+    if encoding_count:
+        st.success(f"{encoding_count} face encodings loaded")
+    else:
+        st.info("No face encodings loaded yet")
 
 st.markdown("---")
-st.subheader("Quick Actions")
+st.subheader("Quick actions")
 
-c1, c2, c3, c4 = st.columns(4)
-if c1.button("📝 Register Student",  use_container_width=True):
+action_1, action_2, action_3, action_4 = st.columns(4)
+if action_1.button("Register student", use_container_width=True):
     st.switch_page("pages/1_Register_Student.py")
-if c2.button("📸 Mark Attendance",   use_container_width=True):
+if action_2.button("Mark attendance", use_container_width=True):
     st.switch_page("pages/2_Mark_Attendance.py")
-if c3.button("📊 View Reports",      use_container_width=True):
+if action_3.button("View reports", use_container_width=True):
     st.switch_page("pages/3_View_Reports.py")
-if c4.button("📈 Analytics",         use_container_width=True):
+if action_4.button("Analytics", use_container_width=True):
     st.switch_page("pages/4_Analytics.py")
 
 st.markdown("---")
-st.subheader("Today's Summary")
-stats = st.session_state.att_manager.get_today_stats()
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Date",            stats["date"])
-c2.metric("Marked today",    stats["total_marked"])
-c3.metric("Session",         "Active" if stats["session_active"] else "Inactive")
-c4.metric("Students on file", len(get_all_students()))
+st.subheader("Today")
+
+summary_1, summary_2, summary_3, summary_4 = st.columns(4)
+summary_1.metric("Date", stats["date"])
+summary_2.metric("Marked today", stats["total_marked"])
+summary_3.metric("Session", "Active" if stats["session_active"] else "Inactive")
+summary_4.metric("Students on file", len(students))

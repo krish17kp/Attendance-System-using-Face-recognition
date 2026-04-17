@@ -10,6 +10,7 @@ __pycache__/
 .mypy_cache/
 
 .pycache_tmp/
+.pycache_tmp_verify/
 .pycache_tmp_verify_2/
 .tmp_compile/
 
