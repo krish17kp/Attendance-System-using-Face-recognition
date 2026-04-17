@@ -15,11 +15,7 @@ __pycache__/
 
 .streamlit/secrets.toml
 
-data/attendance.db
-data/raw_faces/
-data/processed_faces/
-data/exports/
-models/encodings.pkl
+attendance_face_recognition/
 
 *.log
 *.tmp
